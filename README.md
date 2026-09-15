@@ -30,29 +30,47 @@ Phase 3 — 前沿扩展
 ## 目录结构
 
 ```
-投影到三维重建-DBT起点/
-├── README.md              # 本文件
+CT3D/
+├── README.md
 ├── docs/
-│   ├── learning-path.md   # 分阶段学习任务
-│   └── resources.md       # 数据集与开源工具链接
+├── teach/                 # 【教学分区】手写核心数学，可手动改代码学习
+│   ├── README.md
+│   ├── t00..t05_*.m
+│   ├── lib/
+│   └── exercises/
+├── matlab/                # Agent 工作站 / 实验脚本（对照用）
+│   ├── p01..p06_*.m
+│   ├── viewer/
+│   └── recon/
+├── vendor/
 ├── data/
-│   ├── raw/               # 原始 DICOM / 投影数据（不提交 git）
-│   └── processed/         # 预处理后的体数据、投影栈
-├── notebooks/             # 探索性实验（phantom、可视化）
+├── notebooks/
 ├── src/
-│   ├── io/                # DICOM / 投影数据读写
-│   ├── reconstruction/    # BP、FBP、迭代重建
-│   └── visualization/     # 切片与体渲染
-├── references/            # 论文笔记、工具箱阅读记录
-└── scripts/               # 下载、批处理脚本
+├── references/
+└── scripts/
 ```
 
+## 两条学习线
+
+| 线 | 入口 | 适合 |
+|----|------|------|
+| **教学（推荐先抠公式）** | [`teach/README.md`](teach/README.md) | HU/窗宽、各向同性重采样、MPR、光线投射、Marching Cubes |
+| **工作站 / 实验** | [`matlab/README.md`](matlab/README.md) | 交互切层、快速出图、FBP 对照 |
 ## 立即着手（P0）
 
-- [ ] 阅读 [LAVI-USP/DBT-Reconstruction](https://github.com/LAVI-USP/DBT-Reconstruction) 的 `FBP.m` / `SART.m`，理解几何参数与反投影流程
-- [ ] 在 `notebooks/` 用 Python 实现 Shepp-Logan phantom + 2D FBP，与工具箱结果对照
-- [ ] 注册 [TCIA](https://www.cancerimagingarchive.net/) 账号，申请下载乳腺癌筛查 DBT 数据集
-- [ ] 用 3D Slicer 打开一份 DBT DICOM，熟悉体数据维度与投影几何
+当前按 **MATLAB 先复现、Python 后对照** 推进（本机 MATLAB R2025a + Image Processing Toolbox）。
+
+- [x] 搭建目录；克隆 [LAVI-USP/DBT-Reconstruction](https://github.com/LAVI-USP/DBT-Reconstruction) 到 `vendor/`
+- [x] `matlab/p01_shepp_logan_fbp.m` — 2D Shepp-Logan，BP vs FBP + RMSE/SSIM
+- [x] `matlab/p02_limited_angle_dbt.m` — 全角度 vs 有限角度（DBT 几何直觉）
+- [ ] 阅读工具箱 `FBP.m` / `SART.m` / `ParameterSettings_*.m`（笔记：[references/dbt-toolbox-notes.md](references/dbt-toolbox-notes.md)）
+- [x] 运行 `matlab/p03_run_lavi_phantom.m`，对照半锥束 3D FBP
+- [x] `matlab/p04_ct_dicom_fbp.m` — 从 `data/OrigCTData` 加载真实轴位 CT 并复现 FBP
+- [x] `matlab/p05_ct_slice_viewer.m` — 三维体积工作站：加载、三平面显示、切片操作
+- [ ] 注册 [TCIA](https://www.cancerimagingarchive.net/) 账号，申请乳腺癌筛查 DBT（Phase 2）
+- [ ] 用 3D Slicer 打开一份 DBT DICOM
+
+运行说明见 [matlab/README.md](matlab/README.md)。
 
 ## 关联资源
 
@@ -74,8 +92,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install numpy scipy matplotlib pydicom SimpleITK torchio
 
-# MATLAB 侧（对照 DBT 工具箱）
-# 需要 MATLAB R2015a+，可选 CUDA 加速
+# MATLAB 侧（Phase 1 主路径）
+# 需要 MATLAB R2015a+ 与 Image Processing Toolbox
+# 可选：克隆工具箱
+#   powershell -File scripts/clone_dbt_toolbox.ps1
 ```
 
 ---

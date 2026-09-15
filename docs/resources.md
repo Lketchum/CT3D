@@ -18,7 +18,7 @@
 | **DBT-Reconstruction (LAVI-USP)** | MATLAB | BP, FBP, SART | Win / Linux / macOS | https://github.com/LAVI-USP/DBT-Reconstruction |
 | **ReconDBT (FDA/DIDSR)** | MATLAB | FBP, SART, MLEM | Linux / macOS only | https://github.com/DIDSR/ReconDBT |
 
-**推荐优先：** LAVI-USP 版本 — 跨平台、几何可配置、含 CUDA 加速选项，与 macOS 开发环境兼容。
+**推荐优先：** LAVI-USP 版本 — 跨平台、几何可配置、含 CUDA 加速选项。Windows 上用 MATLAB 本体；克隆命令：`scripts/clone_dbt_toolbox.ps1`。本地阅读笔记见 [references/dbt-toolbox-notes.md](../references/dbt-toolbox-notes.md)。
 
 ---
 

@@ -1,0 +1,17 @@
+# Core numerics & plotting
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+
+# Medical imaging I/O
+pydicom>=2.4
+SimpleITK>=2.3
+
+# Notebooks
+jupyter>=1.0
+ipykernel>=6.0
+
+# Optional: DiffDRR path (Phase 3)
+# torch>=2.0
+# torchio>=0.19
+# diffdrr  # pip install from https://github.com/eigenvivek/DiffDRR
