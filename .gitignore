@@ -22,6 +22,11 @@ __pycache__/
 .idea/
 .vscode/
 
+# .NET
+**/bin/
+**/obj/
+*.user
+
 # MATLAB
 *.asv
 *.m~
