@@ -2,18 +2,12 @@ namespace CT3D.Core;
 
 public static class WindowLevel
 {
-    public static byte[] CreateAxialSlice(
-        VolumeData volume,
-        int sliceIndex,
+    public static byte[] ToDisplayBytes(
+        SliceImage slice,
         double windowWidth,
         double windowCenter)
     {
-        ArgumentNullException.ThrowIfNull(volume);
-
-        if ((uint)sliceIndex >= (uint)volume.Depth)
-        {
-            throw new ArgumentOutOfRangeException(nameof(sliceIndex));
-        }
+        ArgumentNullException.ThrowIfNull(slice);
 
         if (windowWidth <= 0)
         {
@@ -22,14 +16,12 @@ public static class WindowLevel
                 "Window width must be positive.");
         }
 
-        var pixels = new byte[checked(volume.Width * volume.Height)];
+        var pixels = new byte[slice.Pixels.Length];
         var lower = windowCenter - windowWidth / 2.0;
-        var sourceOffset = sliceIndex * volume.Width * volume.Height;
 
         for (var index = 0; index < pixels.Length; index++)
         {
-            var normalized =
-                (volume.Voxels[sourceOffset + index] - lower) / windowWidth;
+            var normalized = (slice.Pixels[index] - lower) / windowWidth;
             var value = Math.Round(
                 normalized * 255.0,
                 MidpointRounding.AwayFromZero);
@@ -37,5 +29,18 @@ public static class WindowLevel
         }
 
         return pixels;
+    }
+
+    public static byte[] CreateAxialSlice(
+        VolumeData volume,
+        int sliceIndex,
+        double windowWidth,
+        double windowCenter)
+    {
+        var slice = MprExtractor.ExtractAxisAligned(
+            volume,
+            MprPlane.Axial,
+            sliceIndex);
+        return ToDisplayBytes(slice, windowWidth, windowCenter);
     }
 }

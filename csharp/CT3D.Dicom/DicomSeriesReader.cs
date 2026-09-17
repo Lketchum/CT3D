@@ -9,6 +9,7 @@ public sealed class DicomSeriesReader
 {
     public async Task<VolumeData> LoadAsync(
         string directory,
+        IProgress<DicomLoadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(directory))
@@ -17,27 +18,35 @@ public sealed class DicomSeriesReader
         }
 
         var slices = new List<SliceInfo>();
+        var paths = Directory.EnumerateFiles(
+            directory,
+            "*",
+            SearchOption.AllDirectories).ToArray();
 
-        foreach (var path in Directory.EnumerateFiles(
-                     directory,
-                     "*",
-                     SearchOption.AllDirectories))
+        for (var index = 0; index < paths.Length; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(new DicomLoadProgress(
+                DicomLoadStage.Scanning,
+                index + 1,
+                paths.Length));
 
             try
             {
                 var file = await DicomFile.OpenAsync(
-                    path,
+                    paths[index],
                     FileReadOption.ReadLargeOnDemand);
                 var dataset = file.Dataset;
 
-                if (!dataset.Contains(DicomTag.PixelData))
+                if (!dataset.Contains(DicomTag.PixelData) ||
+                    dataset.GetSingleValueOrDefault(
+                        DicomTag.Modality,
+                        string.Empty) != "CT")
                 {
                     continue;
                 }
 
-                slices.Add(CreateSliceInfo(path, dataset));
+                slices.Add(CreateSliceInfo(paths[index], dataset));
             }
             catch (DicomFileException)
             {
@@ -48,10 +57,16 @@ public sealed class DicomSeriesReader
         if (slices.Count == 0)
         {
             throw new InvalidDataException(
-                "No DICOM images with pixel data were found.");
+                "No single-frame CT DICOM images were found.");
         }
 
-        slices.Sort(static (left, right) =>
+        var selectedSlices = slices
+            .GroupBy(static slice => slice.SeriesInstanceUid)
+            .OrderByDescending(static group => group.Count())
+            .First()
+            .ToList();
+
+        selectedSlices.Sort(static (left, right) =>
         {
             var positionOrder = left.Position.CompareTo(right.Position);
             return positionOrder != 0
@@ -59,28 +74,33 @@ public sealed class DicomSeriesReader
                 : left.InstanceNumber.CompareTo(right.InstanceNumber);
         });
 
-        ValidateSeries(slices);
+        ValidateSeries(selectedSlices);
 
-        var first = slices[0];
+        var first = selectedSlices[0];
         var voxels = new float[
-            checked(first.Width * first.Height * slices.Count)];
+            checked(first.Width * first.Height * selectedSlices.Count)];
         var sliceSize = first.Width * first.Height;
 
-        for (var z = 0; z < slices.Count; z++)
+        for (var z = 0; z < selectedSlices.Count; z++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var file = await DicomFile.OpenAsync(slices[z].Path);
-            DecodeFrame(file.Dataset, voxels.AsSpan(z * sliceSize, sliceSize));
+            progress?.Report(new DicomLoadProgress(
+                DicomLoadStage.Decoding,
+                z + 1,
+                selectedSlices.Count));
+            DecodeFrame(
+                selectedSlices[z].Dataset,
+                voxels.AsSpan(z * sliceSize, sliceSize));
         }
 
         return new VolumeData(
             voxels,
             first.Width,
             first.Height,
-            slices.Count,
+            selectedSlices.Count,
             first.SpacingX,
             first.SpacingY,
-            CalculateSpacingZ(slices));
+            CalculateSpacingZ(selectedSlices));
     }
 
     private static SliceInfo CreateSliceInfo(
@@ -125,6 +145,10 @@ public sealed class DicomSeriesReader
 
         return new SliceInfo(
             path,
+            dataset,
+            dataset.GetSingleValueOrDefault(
+                DicomTag.SeriesInstanceUID,
+                string.Empty),
             pixelData.Width,
             pixelData.Height,
             pixelSpacing[1],
@@ -262,6 +286,8 @@ public sealed class DicomSeriesReader
 
     private sealed record SliceInfo(
         string Path,
+        DicomDataset Dataset,
+        string SeriesInstanceUid,
         int Width,
         int Height,
         double SpacingX,

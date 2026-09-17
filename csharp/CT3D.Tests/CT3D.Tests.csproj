@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CT3D.Core\CT3D.Core.csproj" />
+    <ProjectReference Include="..\CT3D.Rendering\CT3D.Rendering.csproj" />
   </ItemGroup>
 
 </Project>
